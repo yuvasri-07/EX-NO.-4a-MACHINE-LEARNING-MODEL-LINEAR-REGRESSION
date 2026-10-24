@@ -39,8 +39,43 @@ The uploaded notebook compares the following models:
 8.	Gradient Boosting Regressor 
 9.	Support Vector Regressor (SVR) 
 10.	K-Nearest Neighbors (KNN) Regressor 
-### LIBRARIES USED
+
+## PROCEDURE 
+
+1.Import the required Python libraries for data processing, visualization, machine learning models, and model evaluation.
+2.Load the house price dataset from the specified CSV file using Pandas.
+3.Display the first five records of the dataset.
+4.Display the dataset information, shape, summary statistics, and check for missing values.
+ 5.Perform Exploratory Data Analysis (EDA) by studying the distribution of numerical features using histograms.
+6.Perform correlation analysis using a correlation heatmap to understand the relationship between the features and house price.
+7.Use scatter plots to study the relationship between individual features and house price.
+8.Detect outliers using boxplots.
+9.Remove extremely low and extremely high house prices using the 1st and 99th percentiles.
+10.Define the independent variables as square_feet, num_rooms, age, and distance_to_city(km), and define price as the target variable.
+11.Split the dataset into training and testing sets using an 80:20 ratio.
+12.Apply StandardScaler to scale the training and testing features.
+13.Create a baseline model that predicts the mean house price.
+14.Train different regression models including Linear Regression, Ridge, Lasso, ElasticNet, Polynomial Regression, Decision Tree, Random Forest,Gradient Boosting, SVR, and KNN.
+15.Evaluate all models using RMSE, MAE, and R² metrics.
+16.Compare the performance of the regression models based on their evaluation metrics.
+17.Plot actual versus predicted house prices.
+18.Perform residual analysis to study prediction errors.
+19.Calculate Random Forest and Gradient Boosting feature importance.
+20.Plot the RMSE comparison graph for all regression models.
+
+## PROGRAM 
+```
+
+from google.colab import drive
+
+drive.mount('/content/drive')
+
 import pandas as pd
+
+df = pd.read_csv('/content/drive/My Drive/house_datasets.csv')
+
+df.head()
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -48,460 +83,601 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 
-from sklearn.linear_model import (
-    LinearRegression,
-    Ridge,
-    Lasso,
-    ElasticNet
-)
-
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 from sklearn.tree import DecisionTreeRegressor
-
-from sklearn.ensemble import (
-    RandomForestRegressor,
-    GradientBoostingRegressor
-)
-
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 
-from sklearn.metrics import (
-    mean_squared_error,
-    mean_absolute_error,
-    r2_score
-)
-### LOAD THE DATASET
-import pandas as pd
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-df = pd.read_csv(
-    '/content/drive/MyDrive/Datasets/house_prices_dataset.csv'
-)
-
-df.head()
-### DATA OVERVIEW
-Display the dataset
-df
-Display information
+print("Dataset Information:")
 df.info()
-Display shape
-df.shape
-Summary statistics
-df.describe()
-Check missing values
-df.isnull().sum()
-## EXPLORATORY DATA ANALYSIS
-Distribution of Features
-The notebook examines the distribution of:
-•	square_feet 
-•	num_rooms 
-•	age 
-•	distance_to_city(km) 
-•	price 
-numeric_features = [
-    'square_feet',
-    'num_rooms',
-    'age',
-    'distance_to_city(km)',
-    'price'
-]
 
-for col in numeric_features:
-    plt.figure(figsize=(6,4))
-    sns.histplot(df[col], kde=True, bins=30)
-    plt.title(f'Distribution of {col}')
-    plt.show()
-9. CORRELATION ANALYSIS
-•	Correlation shows the relationship between numerical variables. 
-•	A correlation heatmap is used to visualize these relationships. 
-plt.figure(figsize=(8,6))
+print("\nDataset Shape:")
+print(df.shape)
+
+print("\nStatistical Summary:")
+print(df.describe())
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+df.hist(figsize=(12, 8))
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(8, 6))
 
 sns.heatmap(
-    df.corr(),
-    annot=True,
-    cmap='coolwarm',
-    fmt=".2f"
+df.corr(numeric_only=True),
+annot=True,
+cmap='coolwarm'
 )
 
-plt.title("Feature Correlation Matrix")
+plt.title("Correlation Heatmap")
 plt.show()
-10. SCATTER PLOTS
-Scatter plots are used to study the relationship between individual features and house price.
-for col in [
+
+features = [
+'square_feet',
+'num_rooms',
+'age',
+'distance_to_city(km)'
+ ]
+
+for feature in features:
+
+plt.figure(figsize=(6, 4))
+
+plt.scatter(
+df[feature],
+df['price']
+)
+
+plt.xlabel(feature)
+plt.ylabel('Price')
+plt.title(feature + ' vs Price')
+
+plt.show()
+
+plt.figure(figsize=(6, 4))
+
+sns.boxplot(
+y=df['price']
+)
+
+plt.title("Price Outliers")
+plt.show()
+
+
+
+lower_limit = df['price'].quantile(0.01)
+upper_limit = df['price'].quantile(0.99)
+
+df = df[
+(df['price'] >= lower_limit) &
+(df['price'] <= upper_limit)
+]
+
+print("Shape after removing outliers:")
+print(df.shape)
+
+
+
+X = df[
+[
     'square_feet',
     'num_rooms',
     'age',
     'distance_to_city(km)'
-]:
-    plt.figure(figsize=(6,4))
-    sns.scatterplot(x=df[col], y=df['price'])
-    plt.title(f'{col} vs Price')
-    plt.show()
-## OUTLIER DETECTION
-•	Boxplots are used to identify extreme values. 
-•	Outliers may negatively affect regression models. 
-for col in [
-    'square_feet',
-    'num_rooms',
-    'age',
-    'distance_to_city(km)',
-    'price'
-]:
-    plt.figure(figsize=(6,4))
-    sns.boxplot(df[col])
-    plt.title(f'Boxplot of {col}')
-    plt.show()
-## OUTLIER TREATMENT
-The notebook removes extremely low and extremely high house prices using the 1st and 99th percentiles.
-Q1 = df['price'].quantile(0.01)
-Q99 = df['price'].quantile(0.99)
-
-df = df[
-    (df['price'] >= Q1) &
-    (df['price'] <= Q99)
 ]
-•	This reduces the effect of extreme house prices. 
-•	It helps the models learn from more typical observations. 
-13. DEFINE FEATURES AND TARGET
-X = df[
-    [
-        'square_feet',
-        'num_rooms',
-        'age',
-        'distance_to_city(km)'
-    ]
 ]
 
 y = df['price']
-•	X → Input features. 
-•	y → Target house price. 
-14. TRAIN-TEST SPLIT
+
+print("\nFeatures:")
+print(X.head())
+
+print("\nTarget:")
+print(y.head())
+
+
+
 X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42
+X,
+y,
+test_size=0.2,
+random_state=42
 )
-•	80% → Training data 
-•	20% → Testing data 
-## FEATURE SCALING
-The notebook uses StandardScaler.
+
+print("\nTraining Data:")
+print(X_train.shape)
+
+print("\nTesting Data:")
+print(X_test.shape)
+
+
+
 scaler = StandardScaler()
 
 X_train_scaled = scaler.fit_transform(X_train)
-
 X_test_scaled = scaler.transform(X_test)
-•	Scaling puts the features on a comparable scale. 
-•	The scaler is fitted only on training data. 
-•	The same transformation is applied to test data. 
 
-## BASELINE MODEL
-The baseline predicts the mean house price for every test observation.
-y_pred_baseline = (
-    np.mean(y_train) *
-    np.ones_like(y_test)
+print("\nFeature Scaling Completed")
+
+
+
+baseline_prediction = np.full(
+len(y_test),
+y_train.mean()
 )
 
-rmse_baseline = np.sqrt(
-    mean_squared_error(y_test, y_pred_baseline)
-)
-
-mae_baseline = mean_absolute_error(
+baseline_rmse = np.sqrt(
+mean_squared_error(
     y_test,
-    y_pred_baseline
+    baseline_prediction
+)
 )
 
-print(
-    f"Baseline RMSE: {rmse_baseline:.2f}, "
-    f"MAE: {mae_baseline:.2f}"
+baseline_mae = mean_absolute_error(
+y_test,
+baseline_prediction
 )
 
-## LINEAR REGRESSION
-•	Linear Regression finds a linear relationship between input features and house price. 
-•	It is used as the main baseline regression model. 
-lr = LinearRegression()
-
-lr.fit(X_train_scaled, y_train)
-
-y_pred_lr = lr.predict(X_test_scaled)
-
-## RIDGE REGRESSION
-•	Ridge Regression is a regularized version of Linear Regression. 
-•	It helps control large model coefficients. 
-ridge = Ridge(alpha=1.0)
-
-ridge.fit(X_train_scaled, y_train)
-
-y_pred_ridge = ridge.predict(X_test_scaled)
-
-## LASSO REGRESSION
-•	Lasso Regression uses L1 regularization. 
-•	It can reduce some feature coefficients toward zero. 
-lasso = Lasso(alpha=0.1)
-
-lasso.fit(X_train_scaled, y_train)
-
-y_pred_lasso = lasso.predict(X_test_scaled)
-
-##  ELASTIC NET REGRESSION
-•	ElasticNet combines L1 and L2 regularization. 
-•	It is useful when several features may contribute to the prediction. 
-elastic = ElasticNet(
-    alpha=0.1,
-    l1_ratio=0.5
+baseline_r2 = r2_score(
+y_test,
+baseline_prediction
 )
 
-elastic.fit(X_train_scaled, y_train)
+print("\nBaseline Model")
+print("RMSE:", baseline_rmse)
+print("MAE:", baseline_mae)
+print("R2:", baseline_r2)
 
-y_pred_elastic = elastic.predict(X_test_scaled)
 
-##  POLYNOMIAL REGRESSION
-•	Polynomial Regression extends Linear Regression by creating polynomial features. 
-•	The notebook uses degree 2. 
-poly = PolynomialFeatures(degree=2)
 
-X_train_poly = poly.fit_transform(X_train_scaled)
-X_test_poly = poly.transform(X_test_scaled)
+linear_model = LinearRegression()
 
-poly_lr = LinearRegression()
-
-poly_lr.fit(X_train_poly, y_train)
-
-y_pred_poly = poly_lr.predict(X_test_poly)
-
-##  DECISION TREE REGRESSOR
-•	A Decision Tree divides the data into different regions based on feature values. 
-•	It can model nonlinear relationships. 
-dt = DecisionTreeRegressor(
-    random_state=42
+linear_model.fit(
+X_train_scaled,
+y_train
 )
 
-dt.fit(X_train_scaled, y_train)
-
-y_pred_dt = dt.predict(X_test_scaled)
-
-##  RANDOM FOREST REGRESSOR
-•	Random Forest combines multiple decision trees. 
-•	It generally provides more robust predictions than a single tree. 
-rf = RandomForestRegressor(
-    n_estimators=100,
-    random_state=42
+linear_pred = linear_model.predict(
+X_test_scaled
 )
 
-rf.fit(X_train_scaled, y_train)
 
-y_pred_rf = rf.predict(X_test_scaled)
+ridge_model = Ridge()
 
-##  GRADIENT BOOSTING REGRESSOR
-•	Gradient Boosting builds models sequentially. 
-•	Each new model attempts to improve the errors of previous models. 
-gbr = GradientBoostingRegressor(
-    n_estimators=100,
-    learning_rate=0.1,
-    random_state=42
+ridge_model.fit(
+X_train_scaled,
+y_train
 )
 
-gbr.fit(X_train_scaled, y_train)
-
-y_pred_gbr = gbr.predict(X_test_scaled)
-
-## SUPPORT VECTOR REGRESSOR
-•	SVR uses Support Vector Machine principles for regression. 
-•	The notebook uses an RBF kernel. 
-svr = SVR(
-    kernel='rbf',
-    C=100,
-    gamma=0.1,
-    epsilon=.1
+ridge_pred = ridge_model.predict(
+X_test_scaled
 )
 
-svr.fit(X_train_scaled, y_train)
 
-y_pred_svr = svr.predict(X_test_scaled)
 
-##  KNN REGRESSOR
-•	KNN predicts a value based on nearby observations. 
-•	The notebook uses 5 neighbors. 
-knn = KNeighborsRegressor(
-    n_neighbors=5
+lasso_model = Lasso()
+
+lasso_model.fit(
+X_train_scaled,
+y_train
 )
 
-knn.fit(X_train_scaled, y_train)
+lasso_pred = lasso_model.predict(
+X_test_scaled
+)
 
-y_pred_knn = knn.predict(X_test_scaled)
 
-## MODEL EVALUATION
-The notebook uses three metrics:
-RMSE
-•	Root Mean Squared Error. 
-•	Lower value indicates better performance. 
-MAE
-•	Mean Absolute Error. 
-•	Lower value indicates better performance. 
-R²
-•	Measures how well the model explains variation in house prices. 
-•	Higher value generally indicates better performance. 
-Code
-models = {
-    "Linear Regression": y_pred_lr,
-    "Ridge": y_pred_ridge,
-    "Lasso": y_pred_lasso,
-    "ElasticNet": y_pred_elastic,
-    "Polynomial Regression": y_pred_poly,
-    "Decision Tree": y_pred_dt,
-    "Random Forest": y_pred_rf,
-    "Gradient Boosting": y_pred_gbr,
-    "SVR": y_pred_svr,
-    "KNN": y_pred_knn
+elastic_model = ElasticNet()
+
+elastic_model.fit(
+X_train_scaled,
+y_train
+)
+
+elastic_pred = elastic_model.predict(
+X_test_scaled
+)
+
+
+
+poly = PolynomialFeatures(
+degree=2
+)
+
+X_train_poly = poly.fit_transform(
+X_train_scaled
+)
+
+X_test_poly = poly.transform(
+X_test_scaled
+)
+
+poly_model = LinearRegression()
+
+poly_model.fit(
+X_train_poly,
+y_train
+)
+
+poly_pred = poly_model.predict(
+X_test_poly
+)
+
+
+dt_model = DecisionTreeRegressor(
+random_state=42
+)
+
+dt_model.fit(
+X_train,
+y_train
+)
+
+dt_pred = dt_model.predict(
+X_test
+)
+
+
+
+rf_model = RandomForestRegressor(
+n_estimators=100,
+random_state=42
+)
+
+rf_model.fit(
+X_train,
+y_train
+)
+
+rf_pred = rf_model.predict(
+X_test
+)
+
+
+
+gb_model = GradientBoostingRegressor(
+n_estimators=100,
+learning_rate=0.1,
+random_state=42
+)
+
+gb_model.fit(
+X_train,
+y_train
+)
+
+gb_pred = gb_model.predict(
+X_test
+)
+
+
+
+svr_model = SVR(
+kernel='rbf',
+C=100,
+gamma=0.1,
+epsilon=0.1
+)
+
+svr_model.fit(
+X_train_scaled,
+y_train
+)
+
+svr_pred = svr_model.predict(
+X_test_scaled
+)
+
+
+
+knn_model = KNeighborsRegressor(
+n_neighbors=5
+)
+
+knn_model.fit(
+X_train_scaled,
+y_train
+)
+
+knn_pred = knn_model.predict(
+X_test_scaled
+)
+
+
+
+def evaluate_model(name, y_true, y_pred):
+
+rmse = np.sqrt(
+mean_squared_error(
+    y_true,
+    y_pred
+)
+)
+
+mae = mean_absolute_error(
+y_true,
+y_pred
+)
+
+r2 = r2_score(
+y_true,
+y_pred
+)
+
+return {
+'Model': name,
+'RMSE': rmse,
+'MAE': mae,
+'R2': r2
 }
+
 
 results = []
 
-for name, y_pred in models.items():
-
-    rmse = np.sqrt(
-        mean_squared_error(y_test, y_pred)
-    )
-
-    mae = mean_absolute_error(
-        y_test,
-        y_pred
-    )
-
-    r2 = r2_score(
-        y_test,
-        y_pred
-    )
-
-    results.append([
-        name,
-        rmse,
-        mae,
-        r2
-    ])
-
-results_df = pd.DataFrame(
-    results,
-    columns=["Model", "RMSE", "MAE", "R2"]
+results.append(
+evaluate_model(
+    'Linear Regression',
+    y_test,
+    linear_pred
+)
 )
 
-results_df.sort_values(
-    by="RMSE"
+results.append(
+evaluate_model(
+    'Ridge Regression',
+    y_test,
+    ridge_pred
+)
 )
 
-##  MODEL COMPARISON
-<img width="601" height="250" alt="image" src="https://github.com/user-attachments/assets/bca8dfef-1052-4e92-90e1-0f6356888be5" />
-		
+results.append(
+evaluate_model(
+    'Lasso Regression',
+    y_test,
+    lasso_pred
+)
+)
 
-### Comparison Criteria
-•	Lower RMSE → Better model. 
-•	Lower MAE → Better model. 
-•	Higher R² → Better model. 
-The notebook sorts the models according to RMSE to compare their performance.
-## ACTUAL VS PREDICTED PRICE
-plt.figure(figsize=(15,12))
+results.append(
+evaluate_model(
+    'ElasticNet',
+    y_test,
+    elastic_pred
+)
+)
 
-for i, (name, y_pred) in enumerate(models.items()):
+results.append(
+evaluate_model(
+    'Polynomial Regression',
+    y_test,
+    poly_pred
+)
+)
 
-    plt.subplot(5,2,i+1)
+results.append(
+evaluate_model(
+    'Decision Tree',
+y_test,
+dt_pred
+)
+)
 
-    plt.scatter(
-        y_test,
-        y_pred,
-        alpha=0.5
-    )
+results.append(
+evaluate_model(
+    'Random Forest',
+    y_test,
+    rf_pred
+)
+)
 
-    plt.plot(
-        [y_test.min(), y_test.max()],
-        [y_test.min(), y_test.max()],
-        'r--'
-    )
+results.append(
+evaluate_model(
+    'Gradient Boosting',
+    y_test,
+    gb_pred
+)
+)
 
-    plt.xlabel("Actual Price")
-    plt.ylabel("Predicted Price")
-    plt.title(f"{name}: Actual vs Predicted")
+results.append(
+evaluate_model(
+    'SVR',
+    y_test,
+    svr_pred
+)
+)
+
+results.append(
+evaluate_model(
+'KNN',
+y_test,
+knn_pred
+)
+)
+
+
+results_df = pd.DataFrame(results)
+
+results_df = results_df.sort_values(
+by='RMSE'
+ )
+
+print("\nMODEL COMPARISON")
+print(results_df)
+
+
+
+predictions = {
+'Linear Regression': linear_pred,
+'Ridge': ridge_pred,
+'Lasso': lasso_pred,
+'ElasticNet': elastic_pred,
+'Polynomial': poly_pred,
+'Decision Tree': dt_pred,
+'Random Forest': rf_pred,
+'Gradient Boosting': gb_pred,
+'SVR': svr_pred,
+'KNN': knn_pred
+}
+
+for name, prediction in predictions.items():
+
+plt.figure(figsize=(6, 4))
+
+plt.scatter(
+y_test,
+prediction
+)
+
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+
+plt.title(
+name + " - Actual vs Predicted"
+ )
+
+plt.show()
+
+
+for name, prediction in predictions.items():
+
+residuals = y_test - prediction
+
+plt.figure(figsize=(6, 4))
+
+plt.scatter(
+prediction,
+residuals
+)
+
+ plt.axhline(
+y=0,
+linestyle='--'
+)
+
+plt.xlabel("Predicted Price")
+plt.ylabel("Residuals")
+
+plt.title(
+name + " - Residual Plot"
+)
+
+plt.show()
+
+
+
+importance = rf_model.feature_importances_
+
+feature_importance = pd.DataFrame({
+'Feature': X.columns,
+'Importance': importance
+})
+
+feature_importance = feature_importance.sort_values(
+by='Importance',
+ascending=False
+)
+
+print("\nRandom Forest Feature Importance:")
+print(feature_importance)
+
+plt.figure(figsize=(8, 5))
+
+plt.bar(
+feature_importance['Feature'],
+feature_importance['Importance']
+)
+
+plt.xlabel("Features")
+plt.ylabel("Importance")
+plt.title("Random Forest Feature Importance")
+
+plt.xticks(rotation=45)
 
 plt.tight_layout()
 plt.show()
-•	The plot compares actual house prices with predicted prices. 
-•	Points closer to the diagonal line indicate better predictions. 
-30. RESIDUAL ANALYSIS
-•	A residual is the difference between actual and predicted values. 
-Residual = Actual Price − Predicted Price
-for name, y_pred in models.items():
 
-    residuals = y_test - y_pred
 
-    plt.figure(figsize=(6,4))
+gb_importance = gb_model.feature_importances_
 
-    sns.scatterplot(
-        x=y_pred,
-        y=residuals,
-        alpha=0.5
-    )
+gb_feature_importance = pd.DataFrame({
+'Feature': X.columns,
+'Importance': gb_importance
+})
 
-    plt.axhline(
-        0,
-        color='r',
-        linestyle='--'
-    )
-
-    plt.xlabel("Predicted Price")
-    plt.ylabel("Residuals")
-    plt.title(f"{name}: Residual Plot")
-
-    plt.show()
-•	Residuals close to zero indicate smaller prediction errors. 
-•	Residual plots help identify unusual prediction patterns. 
-##  RANDOM FOREST FEATURE IMPORTANCE
-The notebook calculates the importance of each feature using Random Forest.
-importances = rf.feature_importances_
-
-feat_names = X.columns
-
-plt.figure(figsize=(6,4))
-
-sns.barplot(
-    x=importances,
-    y=feat_names
+gb_feature_importance = gb_feature_importance.sort_values(
+by='Importance',
+ascending=False
 )
+
+print("\nGradient Boosting Feature Importance:")
+print(gb_feature_importance)
+
+
+
+plt.figure(figsize=(10, 6))
+
+plt.bar(
+results_df['Model'],
+results_df['RMSE']
+ )
+
+plt.xlabel("Models")
+plt.ylabel("RMSE")
 
 plt.title(
-    "Random Forest Feature Importance"
+"RMSE Comparison of Regression Models"
 )
 
+plt.xticks(
+rotation=45,
+ha='right'
+)
+
+plt.tight_layout()
 plt.show()
-This helps identify which house features contribute more to the Random Forest prediction.
-##  GRADIENT BOOSTING FEATURE IMPORTANCE
-importances_gbr = gbr.feature_importances_
+```
 
-plt.figure(figsize=(6,4))
+## OUTPUT 
 
-sns.barplot(
-    x=importances_gbr,
-    y=feat_names
-)
+<img width="705" height="615" alt="image" src="https://github.com/user-attachments/assets/db43ccca-931f-4ce6-96ab-746765b0f81c" />
+<img width="762" height="747" alt="image" src="https://github.com/user-attachments/assets/d7d29efc-108e-4cd6-ac2e-a1a01c0d4ba2" />
+<img width="762" height="747" alt="image" src="https://github.com/user-attachments/assets/0d4baf48-0154-4994-92d2-aba60a4c2692" />
+<img width="762" height="747" alt="image" src="https://github.com/user-attachments/assets/36f891ed-adbb-4adf-918f-0141a062ebd5" />
+<img width="762" height="747" alt="image" src="https://github.com/user-attachments/assets/5e3fca36-cd64-4d6a-a891-4a6bb6226d6c" />
+<img width="725" height="375" alt="image" src="https://github.com/user-attachments/assets/9626aff9-5377-43d1-9152-6e0fffb90956" />
+<img width="761" height="682" alt="image" src="https://github.com/user-attachments/assets/a9092318-21b4-42c8-b156-f8ee89328c38" />
+<img width="726" height="325" alt="image" src="https://github.com/user-attachments/assets/d0859043-a438-4874-b34c-3d7506d63e21" />
+<img width="802" height="647" alt="image" src="https://github.com/user-attachments/assets/06c467cb-0425-4ff6-815d-6d881c0d36b3" />
+<img width="722" height="467" alt="image" src="https://github.com/user-attachments/assets/9ac7779c-80b1-4ce1-8497-35448242ea4d" />
+<img width="787" height="517" alt="image" src="https://github.com/user-attachments/assets/a322acf5-88e8-41e5-83e1-1df8549e2185" />
+<img width="756" height="497" alt="image" src="https://github.com/user-attachments/assets/9e9cdcb1-ea47-4647-a055-7d22f409a367" />
+<img width="785" height="492" alt="image" src="https://github.com/user-attachments/assets/67065470-79b9-4e22-aef7-baf6cd6f4bf0" />
+<img width="777" height="482" alt="image" src="https://github.com/user-attachments/assets/09af90ab-de6b-49cf-9375-de8340b7c663" />
+<img width="730" height="750" alt="image" src="https://github.com/user-attachments/assets/58d977fe-e1a9-40ee-9848-8219685c0b1b" />
+<img width="837" height="802" alt="image" src="https://github.com/user-attachments/assets/745ecec1-2179-4e92-8111-f7764fb97627" />
+<img width="792" height="517" alt="image" src="https://github.com/user-attachments/assets/368118a3-8941-4785-b59f-1b796ccc58ab" />
+<img width="792" height="517" alt="image" src="https://github.com/user-attachments/assets/de5beb8f-0989-48db-89a3-9590d05ce58f" />
+<img width="802" height="542" alt="image" src="https://github.com/user-attachments/assets/a67d52fd-31ea-4063-a769-897ed1ed2f43" />
+<img width="735" height="492" alt="image" src="https://github.com/user-attachments/assets/c450a1ad-be3d-4411-8916-cd3d36624872" />
+<img width="727" height="462" alt="image" src="https://github.com/user-attachments/assets/5a528aec-a0d9-47c5-8b7e-2401cf1dc4d9" />
+<img width="722" height="502" alt="image" src="https://github.com/user-attachments/assets/69a2d638-9f42-4e49-83ab-2f43d5a469e5" />
+<img width="727" height="497" alt="image" src="https://github.com/user-attachments/assets/951c09ca-11a8-4c03-935b-9c51554c6480" />
+<img width="732" height="496" alt="image" src="https://github.com/user-attachments/assets/3781cfa7-8c1e-452a-904c-a0108f5f5ae3" />
+<img width="736" height="477" alt="image" src="https://github.com/user-attachments/assets/a9477858-0e71-47fd-9e76-0e7267537fbb" />
+<img width="717" height="481" alt="image" src="https://github.com/user-attachments/assets/f5fe85ad-5f20-4ff8-831d-38688db892d6" />
+<img width="711" height="472" alt="image" src="https://github.com/user-attachments/assets/ce76d264-e7b2-4c9f-b1d2-759204ab6603" />
+<img width="722" height="500" alt="image" src="https://github.com/user-attachments/assets/f70cd8da-ccee-4de9-8c70-898b2d58e6d1" />
+<img width="717" height="497" alt="image" src="https://github.com/user-attachments/assets/c622071a-63c5-410c-847e-2762103e67ff" />
+<img width="730" height="487" alt="image" src="https://github.com/user-attachments/assets/3ae53d96-a146-4d6f-93b0-5eb85eb2b85f" />
+<img width="727" height="472" alt="image" src="https://github.com/user-attachments/assets/2a593323-ecac-45c9-a4a4-896f1d7661d0" />
+<img width="692" height="510" alt="image" src="https://github.com/user-attachments/assets/edd07a47-7476-4f75-8819-5ef1fd72c5d2" />
 
-plt.title(  "Gradient Boosting Feature Importance")
 
-plt.show()
-This shows the relative contribution of the house features to the Gradient Boosting model.
-
-## RMSE COMPARISON GRAPH
-plt.figure(figsize=(10,6))
-
-sns.barplot(
-    x="RMSE",
-    y="Model",
-    data=results_df.sort_values("RMSE")
-)
-
-plt.title(
-    "RMSE Comparison Across Regression Models"
-)
-
-plt.show()
-•	The graph provides a visual comparison of model errors. 
-•	The model with the lowest RMSE performs best according to this metric.
 ## CONCLUSION
 Thus, Linear Regression and other regression models were successfully applied for house price prediction, and their performance was compared using standard regression evaluation metrics.
-
